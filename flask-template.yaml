@@ -1,4 +1,4 @@
-apiVersion: template.openshift.io/v1
+apiVersion: v1
 kind: Template
 metadata:
   name: flask-app
@@ -21,7 +21,7 @@ parameters:
 - name: SOURCE_REPOSITORY_URL
   displayName: Git Repository URL
   required: true
-  value: https://github.com/DmZ/flask-openshift-example.git
+  value: "https://github.com/DmZ/flask-openshift-example.git"
 - name: SOURCE_REPOSITORY_REF
   displayName: Git Reference
 - name: GITHUB_WEBHOOK_SECRET
