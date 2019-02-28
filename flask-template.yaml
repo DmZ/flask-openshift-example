@@ -1,0 +1,147 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: flask-app
+labels:
+  app: flask-app
+  template: flask-app
+parameters:
+- name: NAME
+  displayName: Name
+  required: true
+  value: flask-app
+- name: APPLICATION_DOMAIN
+  displayName: Application Hostname
+  description: "The exposed hostname that will route to the Node.js service, if left blank a value will be defaulted."
+  value: ""
+- name: NAMESPACE
+  displayName: Namespace
+  required: true
+  value: myproject
+- name: SOURCE_REPOSITORY_URL
+  displayName: Git Repository URL
+  required: true
+  value: https://github.com/DmZ/flask-openshift-example.git
+- name: SOURCE_REPOSITORY_REF
+  displayName: Git Reference
+- name: GITHUB_WEBHOOK_SECRET
+  displayName: GitHub Webhook Secret
+  description: "Github trigger secret.  A difficult to guess string encoded as part of the webhook URL.  Not encrypted."
+  generate: expression
+  from: "[a-zA-Z0-9]{40}"
+- name: GENERIC_WEBHOOK_SECRET
+  displayName: Generic Webhook Secret
+  description: "A secret string used to configure the Generic webhook."
+  generate: expression
+  from: "[a-zA-Z0-9]{40}"
+
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: ${NAME}
+    sessionAffinity: None
+- apiVersion: v1
+  kind: Route
+  metadata:
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+  spec:
+    host: ${APPLICATION_DOMAIN}
+    to:
+      kind: Service
+      name: ${NAME}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    annotations:
+      "template.alpha.openshift.io/wait-for-ready": true
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+  spec:
+    source:
+      git:
+        uri: ${SOURCE_REPOSITORY_URL}
+        ref: ${SOURCE_REPOSITORY_REF}
+      type: Git
+    strategy:
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: alpine:3.6
+          namespace: ${NAMESPACE}
+      type: Docker
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${NAME}:latest
+    triggers:
+    - github:
+        secret: ${GITHUB_WEBHOOK_SECRET}
+      type: GitHub
+    - generic:
+        secret: ${GENERIC_WEBHOOK_SECRET}
+      type: Generic
+    - type: ConfigChange
+    - type: ImageChange
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      "template.alpha.openshift.io/wait-for-ready": true
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+  spec:
+    strategy:
+      type: Rolling
+      activeDeadlineSeconds: 21600
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - flask-app
+        from:
+          kind: ImageStreamTag
+          name: ${NAME}:latest
+    replicas: 2
+    selector:
+      app: ${NAME}
+    template:
+      metadata:
+        name: ${NAME}
+        labels:
+          app: ${NAME}
+      spec:
+        containers:
+        - image: " "
+          name: flask-app
+          ports:
+          - containerPort: 8080
+            protocol: TCP
