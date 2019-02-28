@@ -8,7 +8,7 @@ labels:
 parameters:
 - name: NAME
   displayName: Name
-  required: true
+  required: "true"
   value: flask-app
 - name: APPLICATION_DOMAIN
   displayName: Application Hostname
@@ -16,11 +16,11 @@ parameters:
   value: ""
 - name: NAMESPACE
   displayName: Namespace
-  required: true
+  required: "true"
   value: myproject
 - name: SOURCE_REPOSITORY_URL
   displayName: Git Repository URL
-  required: true
+  required: "true"
   value: "https://github.com/DmZ/flask-openshift-example.git"
 - name: SOURCE_REPOSITORY_REF
   displayName: Git Reference
@@ -72,7 +72,7 @@ objects:
   kind: BuildConfig
   metadata:
     annotations:
-      template.alpha.openshift.io/wait-for-ready: true
+      template.alpha.openshift.io/wait-for-ready: "true"
     labels:
       app: ${NAME}
     name: ${NAME}
@@ -106,7 +106,7 @@ objects:
   kind: DeploymentConfig
   metadata:
     annotations:
-      template.alpha.openshift.io/wait-for-ready: true
+      template.alpha.openshift.io/wait-for-ready: "true"
     labels:
       app: ${NAME}
     name: ${NAME}
@@ -124,7 +124,7 @@ objects:
     - type: ConfigChange
     - type: ImageChange
       imageChangeParams:
-        automatic: true
+        automatic: "true"
         containerNames:
         - flask-app
         from:
